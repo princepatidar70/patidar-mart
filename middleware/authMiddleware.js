@@ -1,25 +1,41 @@
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
+import Admin from '../models/Admin.js'; 
 
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.header("Authorization");
+const authMiddleware = async (req, res, next) => {
+    try {
+        const token = req.header("Authorization")?.split(" ")[1];
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "Access Denied" });
-  }
+        if (!token) {
+            return res.status(401).json({ message: "Access Denied: No Token Provided" });
+        }
 
-  const token = authHeader.split(" ")[1]; // "Bearer <token>"
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  if (!token) {
-    return res.status(401).json({ message: "Invalid Token Format" });
-  }
+        // ✅ Fix: Use Admin Model to find Admin by `_id`
+        const admin = await Admin.findById(decoded.adminId).select("-password");
 
-  try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
+        if (!admin) {
+            return res.status(404).json({ message: "Admin not found in the database" });
+        }
+
+        req.user = admin; // Attach admin to request
+        next();
+    } catch (error) {
+        res.status(401).json({ message: "Invalid Token", error: error.message });
+    }
+};
+
+// ✅ Admin Authorization Middleware
+export const adminMiddleware = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized: No Admin Found" });
+    }
+
+    if (req.user.role !== "admin" && req.user.role !== "superadmin") {
+        return res.status(403).json({ message: "Access Denied: Admins Only" });
+    }
+
     next();
-  } catch (error) {
-    res.status(400).json({ message: "Invalid Token" });
-  }
 };
 
 export default authMiddleware;
