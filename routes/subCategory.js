@@ -1,97 +1,84 @@
 import express from "express";
 import SubCategory from "../models/SubCategory.js";
 import Category from "../models/Category.js";
+import multer from "multer";
 
 const router = express.Router();
 
-// ✅ Create SubCategory
-router.post("/create", async (req, res) => {
+// Image Upload Setup
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+const upload = multer({ storage });
+
+//  SubCategory Create API 
+router.post("/create", upload.single("image"), async (req, res) => {
   try {
-    const { name, description, image, category } = req.body;
+    const { name, category } = req.body;
+    const image = req.file ? req.file.filename : null;
 
-    if (!name || !category) {
-      return res.status(400).json({ message: "Name and category are required" });
+    //  Validate category ID (Check if category exists)
+    const parentCategory = await Category.findById(category);
+    if (!parentCategory) {
+      return res.status(400).json({ message: "Invalid category selected" });
     }
 
-    const existingCategory = await Category.findById(category);
-    if (!existingCategory) {
-      return res.status(404).json({ message: "Category not found" });
-    }
+    const newSubCategory = new SubCategory({
+      name,
+      category,
+      image,
+    });
 
-    const newSubCategory = new SubCategory({ name, description, image, category });
     await newSubCategory.save();
 
-    res.status(201).json({ message: "SubCategory created successfully", newSubCategory });
+
+    res.status(201).json({
+      message: "SubCategory created successfully",
+      subCategory: {
+        _id: newSubCategory._id,
+        name: newSubCategory.name,
+        category: {
+          _id: parentCategory._id,
+          name: parentCategory.name,
+        },
+        image: newSubCategory.image,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-// ✅ Get All SubCategories
+
+// Read All
 router.get("/", async (req, res) => {
-  try {
-    const subCategories = await SubCategory.find().populate("category", "name");
-    res.json(subCategories);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
+  const subCategories = await SubCategory.find().populate("category", "name");
+  res.status(200).json(subCategories);
 });
 
-// ✅ Get Single SubCategory by ID
-router.get("/:id", async (req, res) => {
-  try {
-    const subCategory = await SubCategory.findById(req.params.id).populate("category", "name");
-    if (!subCategory) {
-      return res.status(404).json({ message: "SubCategory not found" });
-    }
-    res.json(subCategory);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
+// Update
+router.put("/update/:id", upload.single("image"), async (req, res) => {
+  const { name, category } = req.body;
+  const image = req.file ? req.file.filename : undefined;
+
+  const subCategory = await SubCategory.findById(req.params.id);
+  if (!subCategory) return res.status(404).json({ message: "Not found" });
+
+  subCategory.name = name || subCategory.name;
+  subCategory.category = category || subCategory.category;
+  if (image) subCategory.image = image;
+
+  await subCategory.save();
+  res.status(200).json({ message: "Updated", subCategory });
 });
 
-// ✅ Update SubCategory
-router.put("/update/:id", async (req, res) => {
-  try {
-    const { name, description, image, category } = req.body;
-
-    const subCategory = await SubCategory.findById(req.params.id);
-    if (!subCategory) {
-      return res.status(404).json({ message: "SubCategory not found" });
-    }
-
-    if (category) {
-      const existingCategory = await Category.findById(category);
-      if (!existingCategory) {
-        return res.status(404).json({ message: "Category not found" });
-      }
-    }
-
-    subCategory.name = name || subCategory.name;
-    subCategory.description = description || subCategory.description;
-    subCategory.image = image || subCategory.image;
-    subCategory.category = category || subCategory.category;
-
-    await subCategory.save();
-    res.json({ message: "SubCategory updated successfully", subCategory });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-});
-
-// ✅ Delete SubCategory
+// Delete
 router.delete("/delete/:id", async (req, res) => {
-  try {
-    const subCategory = await SubCategory.findById(req.params.id);
-    if (!subCategory) {
-      return res.status(404).json({ message: "SubCategory not found" });
-    }
-
-    await subCategory.deleteOne();
-    res.json({ message: "SubCategory deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
+  await SubCategory.findByIdAndDelete(req.params.id);
+  res.status(200).json({ message: "Deleted" });
 });
 
 export default router;

@@ -6,18 +6,15 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// ✅ Admin Signup
+//  Admin Signup
 router.post("/signup", async (req, res) => {
     const { name, email, password, role, profileImage } = req.body;
-
     try {
         const existingAdmin = await Admin.findOne({ email });
         if (existingAdmin) {
             return res.status(400).json({ message: "Admin already exists" });
         }
-
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const newAdmin = new Admin({
             name,
             email,
@@ -28,53 +25,27 @@ router.post("/signup", async (req, res) => {
 
         await newAdmin.save();
         res.status(201).json({ message: "Admin created successfully", admin: newAdmin });
-
     } catch (error) {
         res.status(500).json({ message: "Error creating admin", error });
     }
 });
 
-// ✅ Admin Login
-// router.post("/login", async (req, res) => {
-//     const { email, password } = req.body;
-
-//     try {
-//         const admin = await Admin.findOne({ email });
-//         if (!admin) {
-//             return res.status(404).json({ message: "Admin not found" });
-//         }
-
-//         const isPasswordValid = await bcrypt.compare(password, admin.password);
-//         if (!isPasswordValid) {
-//             return res.status(401).json({ message: "Invalid credentials" });
-//         }
-
-//         const token = jwt.sign({ adminId: admin._id, role: admin.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
-
-//         res.status(200).json({ message: " Admin Login successfully", token, admin });
-
-//     } catch (error) {
-//         res.status(500).json({ message: "Error logging in", error });
-//     }
-// });
+// Admin Login
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
-
     try {
         const admin = await Admin.findOne({ email });
         if (!admin) {
             return res.status(404).json({ message: "Admin not found" });
         }
-
         const isPasswordValid = await bcrypt.compare(password, admin.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
-
         const token = jwt.sign(
             { adminId: admin._id, role: admin.role },
             process.env.JWT_SECRET || "fallback_secret",
-            { expiresIn: "1d" }
+            { expiresIn: "3h" }
         );
 
         res.status(200).json({ message: "Admin Login successfully", token, admin });
@@ -86,7 +57,7 @@ router.post("/login", async (req, res) => {
 });
 
 
-// ✅ Get All Admins
+//  Get All Admins
 router.get("/", authMiddleware, async (req, res) => {
     try {
         const admins = await Admin.find();
@@ -96,7 +67,7 @@ router.get("/", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Get Single Admin by ID
+//  Get Single Admin by ID
 router.get("/:id", authMiddleware, async (req, res) => {
     const { id } = req.params;
 
@@ -111,7 +82,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Update Admin
+//  Update Admin
 router.put("/:id", authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { name, email, password, role, profileImage } = req.body;
@@ -138,7 +109,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Delete Admin
+//  Delete Admin
 router.delete("/:id", authMiddleware, async (req, res) => {
     const { id } = req.params;
 

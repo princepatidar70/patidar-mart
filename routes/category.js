@@ -1,14 +1,24 @@
 import express from "express";
 import Category from "../models/Category.js";
 import authMiddleware, { adminMiddleware } from "../middleware/authMiddleware.js";
+import multer from "multer";
 
 const router = express.Router();
 
-// ✅ CREATE CATEGORY (Admins Only)
-router.post("/create", authMiddleware, adminMiddleware, async (req, res) => {
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+const upload = multer({ storage });
+
+//  Create Category (Admin Only)
+router.post("/create", upload.single("image"), async (req, res) => {
   try {
-    const { name, description, image } = req.body;
-    
+    const { name } = req.body;
+    const image = req.file ? req.file.filename : null;
+
     if (!name) {
       return res.status(400).json({ message: "Category name is required" });
     }
@@ -18,7 +28,7 @@ router.post("/create", authMiddleware, adminMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Category already exists" });
     }
 
-    const newCategory = new Category({ name, description, image });
+    const newCategory = new Category({ name, image });
     await newCategory.save();
 
     res.status(201).json({ message: "Category created successfully", category: newCategory });
@@ -27,7 +37,7 @@ router.post("/create", authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
-// ✅ GET ALL CATEGORIES (Anyone Can Access)
+//  Get All Categories (Public)
 router.get("/", async (req, res) => {
   try {
     const categories = await Category.find();
@@ -37,7 +47,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ GET CATEGORY BY ID (Anyone Can Access)
+//  Get Category by ID (Public)
 router.get("/:id", async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
@@ -50,11 +60,11 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ✅ UPDATE CATEGORY (Admins Only)
+//  Update Category (Admin Only)
 router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { name, description, image } = req.body;
-    const category = await Category.findByIdAndUpdate(req.params.id, { name, description, image }, { new: true });
+    const { name } = req.body;
+    const category = await Category.findByIdAndUpdate(req.params.id, { name }, { new: true });
 
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
@@ -66,8 +76,8 @@ router.put("/:id", authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
-// ✅ DELETE CATEGORY (Admins Only)
-router.delete("/:id",  async (req, res) => {
+//  Delete Category (Admin Only)
+router.delete("/:id", async (req, res) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);
     if (!category) {
