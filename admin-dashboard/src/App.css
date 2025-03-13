@@ -220,9 +220,9 @@ table {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-table thead {
-  background: #007bff;
-  color: white;
+.recent-orders table thead {
+  background: #71ea41;
+  color: rgb(6, 5, 5);
 }
 
 table th, table td {
@@ -293,15 +293,28 @@ table tbody tr {
   margin-bottom: 10px;
 }
 
-.modal-content input {
+.modal-content input  {
+  width: 90%;
+  padding: 9px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.modal-content select  {
+  width: 95%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.modal-content textarea  {
   width: 90%;
   padding: 8px;
   margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
-
-.save-btn {
+.save-btn  {
   background: #28a745;
   color: white;
   padding: 8px 12px;
@@ -314,6 +327,7 @@ table tbody tr {
 .save-btn:hover {
   background: #218838;
 }
+
 
 .cancel-btn {
   background: #dc3545;
@@ -390,4 +404,63 @@ table tbody tr:hover {
 
 .delete-btn:hover {
   background: #c82333;
+}
+
+/* HEARDER */
+.admin-header {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: #236907;
+  color: #fff;
+  padding: 10px 20px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left h1 {
+  margin-left: 15px;
+  font-size: 20px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.header-right {
+  position: relative;
+}
+
+.profile-menu {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  background: white;
+  color: black;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
 }

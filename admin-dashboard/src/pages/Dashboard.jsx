@@ -1,33 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+  
+  const [stats, setStats] = useState({
+    totalSales: "₹0",
+    totalOrders: 0,
+    totalUsers: 0,
+    totalProducts: 0,
+    totalCategories: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const isAuth = localStorage.getItem("adminToken");
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  // Dummy stats
-  const stats = {
-    totalSales: "$12,450",
-    totalOrders: 128,
-    totalUsers: 560,
-    totalProducts: 75,
+  const fetchDashboardData = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:3000/api/dashboard/stats", {
+        headers: { Authorization: `Bearer ${isAuth}` },
+      });
+      setStats({
+        totalSales: `₹${data.totalSales}`,
+        totalOrders: data.totalOrders,
+        totalUsers: data.totalUsers,
+        totalProducts: data.totalProducts,
+        totalCategories: data.totalCategories,
+      });
+
+      const recentOrdersRes = await axios.get("http://localhost:3000/api/dashboard/recent-orders", {
+        headers: { Authorization: `Bearer ${isAuth}` },
+      });
+      setRecentOrders(recentOrdersRes.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    }
   };
 
-  const recentOrders = [
-    { id: "#1001", customer: "John Doe", amount: "$120", status: "Delivered" },
-    { id: "#1002", customer: "Jane Smith", amount: "$85", status: "Pending" },
-    {
-      id: "#1003",
-      customer: "Mike Johnson",
-      amount: "$200",
-      status: "Cancelled",
-    },
-    { id: "#1004", customer: "Emily Davis", amount: "$150", status: "Shipped" },
-  ];
-
-  // Logout Function
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("adminToken");
     navigate("/");
   };
 
@@ -39,7 +56,6 @@ const Dashboard = () => {
           <h2>Admin Dashboard</h2>
         </header>
 
-        {/* Dashboard Stats */}
         <div className="dashboard-stats">
           <div className="stat-card">
             <h3>{stats.totalSales}</h3>
@@ -54,12 +70,18 @@ const Dashboard = () => {
             <p>Total Users</p>
           </div>
           <div className="stat-card">
+            <h3>{stats.totalCategories}</h3>
+            <p>Total Categories</p>
+          </div>
+          <div className="stat-card">
             <h3>{stats.totalProducts}</h3>
             <p>Total Products</p>
           </div>
         </div>
 
-        {/* Recent Orders */}
+        {loading ? (
+          <p>Loading orders...</p>
+        ) : (
         <div className="recent-orders">
           <h3>Recent Orders</h3>
           <table>
@@ -85,6 +107,7 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );
